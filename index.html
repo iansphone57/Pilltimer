@@ -2,7 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+
+<!-- This line makes mobile text scale correctly -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Pill Timer</title>
+
 <style>
     body {
         font-family: Arial, sans-serif;
@@ -12,7 +17,12 @@
         margin: auto;
         font-size: 18px;
     }
-    h1 { text-align: center; font-size: 28px; }
+
+    h1 {
+        text-align: center;
+        font-size: 28px;
+    }
+
     .sound-toggle {
         background: white;
         padding: 12px;
@@ -24,6 +34,7 @@
         user-select: none;
         font-size: 20px;
     }
+
     .pill-form {
         background: white;
         padding: 15px;
@@ -32,6 +43,7 @@
         box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         font-size: 18px;
     }
+
     select, input {
         padding: 10px;
         margin: 6px 0;
@@ -39,6 +51,7 @@
         box-sizing: border-box;
         font-size: 18px;
     }
+
     button {
         padding: 12px;
         background: #0078ff;
@@ -49,7 +62,11 @@
         margin-top: 10px;
         font-size: 18px;
     }
-    button:hover { background: #005fcc; }
+
+    button:hover {
+        background: #005fcc;
+    }
+
     .pill-item {
         background: white;
         padding: 14px;
@@ -58,22 +75,44 @@
         box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         font-size: 18px;
     }
+
     .pill-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
     }
-    .pill-name { font-weight: bold; font-size: 20px; }
+
+    .pill-name {
+        font-weight: bold;
+        font-size: 20px;
+    }
+
     .pill-buttons {
         margin-top: 10px;
         display: flex;
         gap: 10px;
     }
-    .taken-btn { background: #28a745; }
-    .taken-btn:hover { background: #1e7e34; }
-    .remove-btn { background: #dc3545; }
-    .remove-btn:hover { background: #b52a37; }
-    .overdue { color: red; font-weight: bold; }
+
+    .taken-btn {
+        background: #28a745;
+    }
+
+    .taken-btn:hover {
+        background: #1e7e34;
+    }
+
+    .remove-btn {
+        background: #dc3545;
+    }
+
+    .remove-btn:hover {
+        background: #b52a37;
+    }
+
+    .overdue {
+        color: red;
+        font-weight: bold;
+    }
 
     /* Mobile scaling */
     @media (max-width: 600px) {
@@ -88,6 +127,7 @@
     }
 </style>
 </head>
+
 <body>
 
 <h1>Pill Timer</h1>
