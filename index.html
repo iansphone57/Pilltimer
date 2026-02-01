@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 
-<!-- This line makes mobile text scale correctly -->
+<!-- Enables proper mobile scaling and pinch zoom -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>Pill Timer</title>
@@ -114,16 +114,16 @@
         font-weight: bold;
     }
 
-    /* Mobile scaling */
+    /* MOBILE: 30% larger UI */
     @media (max-width: 600px) {
-        body { font-size: 20px; }
-        h1 { font-size: 30px; }
-        .pill-item { font-size: 20px; padding: 18px; }
-        .pill-name { font-size: 22px; }
-        #pillList div[id^="time-"] { font-size: 20px; }
-        button { font-size: 20px; padding: 14px; }
-        select, input { font-size: 20px; padding: 12px; }
-        .sound-toggle { font-size: 20px; padding: 14px; }
+        body { font-size: 26px; }
+        h1 { font-size: 38px; }
+        .pill-item { font-size: 26px; padding: 22px; }
+        .pill-name { font-size: 30px; }
+        #pillList div[id^="time-"] { font-size: 26px; }
+        button { font-size: 26px; padding: 18px; }
+        select, input { font-size: 26px; padding: 16px; }
+        .sound-toggle { font-size: 26px; padding: 18px; }
     }
 </style>
 </head>
@@ -217,7 +217,9 @@ function addPill() {
 
     pills.push(pill);
     sortAndRender();
-    startTimer(pill);
+
+    // FIX: ensure DOM is ready before timer starts
+    setTimeout(() => startTimer(pill), 50);
 
     custom.value = "";
     document.getElementById("pillMinutes").value = "";
