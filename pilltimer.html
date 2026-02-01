@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Pill Timer</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f5f5f5;
+        padding: 20px;
+        max-width: 650px;
+        margin: auto;
+    }
+    h1 { text-align: center; }
+    .sound-toggle {
+        background: white;
+        padding: 10px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        font-weight: bold;
+        cursor: pointer;
+        user-select: none;
+    }
+    .pill-form {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    select, input {
+        padding: 8px;
+        margin: 5px 0;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    button {
+        padding: 10px;
+        background: #0078ff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-top: 10px;
+    }
+    button:hover { background: #005fcc; }
+    .pill-item {
+        background: white;
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .pill-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .pill-name { font-weight: bold; font-size: 1.1em; }
+    .pill-buttons {
+        margin-top: 10px;
+        display: flex;
+        gap: 10px;
+    }
+    .taken-btn { background: #28a745; }
+    .taken-btn:hover { background: #1e7e34; }
+    .remove-btn { background: #dc3545; }
+    .remove-btn:hover { background: #b52a37; }
+    .overdue { color: red; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<h1>Pill Timer</h1>
+
+<div class="sound-toggle" onclick="toggleSound()">
+    🔊 Sound: <span id="soundStatus">ON</span>
+</div>
+
+<div class="pill-form">
+    <label>Select Pill:</label>
+    <select id="pillDropdown" onchange="handlePillSelection()">
+        <option value="Ibuprofen">Ibuprofen</option>
+        <option value="Paracetamol">Paracetamol</option>
+        <option value="Aspirin">Aspirin</option>
+        <option value="Vitamin D">Vitamin D</option>
+        <option value="Magnesium">Magnesium</option>
+        <option value="Voltaren">Voltaren</option>
+        <option value="Other">Other (type manually)</option>
+    </select>
+
+    <input type="text" id="customPill" placeholder="Enter pill name" style="display:none;">
+
+    <label>Time Until Next Dose (minutes):</label>
+    <input type="number" id="pillMinutes">
+
+    <button onclick="addPill()">Add Pill Timer</button>
+</div>
+
+<div id="pillList"></div>
+
+<script>
+let pills = [];
+let soundEnabled = true;
+let audioContext = null;
+
+const defaultTimes = {
+    "Ibuprofen": 360,
+    "Paracetamol": 240,
+    "Aspirin": 240,
+    "Vitamin D": 1440,
+    "Magnesium": 1440,
+    "Voltaren": 480
+};
+
+function toggleSound() {
+    soundEnabled = !soundEnabled;
+    document.getElementById("soundStatus").textContent = soundEnabled ? "ON" : "OFF";
+}
+
+function handlePillSelection() {
+    const dropdown = document.getElementById("pillDropdown");
+    const custom = document.getElementById("customPill");
+    const minutesInput = document.getElementById("pillMinutes");
+
+    if (dropdown.value === "Other") {
+        custom.style.display = "block";
+        minutesInput.value = "";
+    } else {
+        custom.style.display = "none";
+        custom.value = "";
+        minutesInput.value = defaultTimes[dropdown.value] || "";
+    }
+}
+
+function addPill() {
+    const dropdown = document.getElementById("pillDropdown");
+    const custom = document.getElementById("customPill");
+    const minutes = parseInt(document.getElementById("pillMinutes").value);
+
+    let name = dropdown.value === "Other" ? custom.value.trim() : dropdown.value;
+
+    if (!name || isNaN(minutes) || minutes <= 0) {
+        alert("Please enter a valid pill name and time.");
+        return;
+    }
+
+    const pill = {
+        id: Date.now(),
+        name,
+        originalMinutes: minutes,
+        endTime: Date.now() + minutes * 60000,
+        alerted: false,
+        element: createPillElement(name, Date.now())
+    };
+
+    pills.push(pill);
+    sortAndRender();
+    startTimer(pill);
+
+    custom.value = "";
+    document.getElementById("pillMinutes").value = "";
+}
+
+function createPillElement(name, id) {
+    const div = document.createElement("div");
+    div.className = "pill-item";
+    div.id = `pill-${id}`;
+
+    div.innerHTML = `
+        <div class="pill-header">
+            <div class="pill-name">${name}</div>
+            <div id="time-${id}">Starting...</div>
+        </div>
+
+        <div class="pill-buttons">
+            <button class="taken-btn" onclick="resetPill(${id})">Taken</button>
+            <button class="remove-btn" onclick="removePill(${id})">Remove</button>
+        </div>
+    `;
+
+    return div;
+}
+
+function startTimer(pill) {
+    pill.interval = setInterval(() => {
+        const now = Date.now();
+        const remaining = pill.endTime - now;
+
+        const timeElement = document.getElementById(`time-${pill.id}`);
+        if (!timeElement) return;
+
+        if (remaining <= 0) {
+            const overdue = now - pill.endTime;
+            timeElement.textContent = "Overdue: " + formatTime(overdue);
+            timeElement.classList.add("overdue");
+
+            if (!pill.alerted && soundEnabled) {
+                playBeepPattern();
+                pill.alerted = true;
+            }
+        } else {
+            timeElement.textContent = formatTime(remaining);
+            timeElement.classList.remove("overdue");
+            pill.alerted = false;
+        }
+
+        sortAndRender();
+    }, 1000);
+}
+
+function formatTime(ms) {
+    const totalSec = Math.floor(ms / 1000);
+    const min = Math.floor(totalSec / 60);
+    const sec = totalSec % 60;
+    return `${min}m ${sec}s`;
+}
+
+function sortAndRender() {
+    const now = Date.now();
+
+    pills.sort((a, b) => {
+        const remA = a.endTime - now;
+        const remB = b.endTime - now;
+
+        const overA = remA <= 0;
+        const overB = remB <= 0;
+
+        if (overA && overB) return (now - a.endTime) > (now - b.endTime) ? -1 : 1;
+        if (overA && !overB) return -1;
+        if (!overA && overB) return 1;
+
+        return remA - remB;
+    });
+
+    const list = document.getElementById("pillList");
+    list.innerHTML = "";
+
+    pills.forEach(pill => list.appendChild(pill.element));
+}
+
+function resetPill(id) {
+    const pill = pills.find(p => p.id === id);
+    if (!pill) return;
+
+    pill.endTime = Date.now() + pill.originalMinutes * 60000;
+    pill.alerted = false;
+
+    const timeElement = document.getElementById(`time-${pill.id}`);
+    if (timeElement) timeElement.classList.remove("overdue");
+}
+
+function removePill(id) {
+    const pill = pills.find(p => p.id === id);
+    if (pill) clearInterval(pill.interval);
+
+    pills = pills.filter(p => p.id !== id);
+    sortAndRender();
+}
+
+function playBeepPattern() {
+    if (!soundEnabled) return;
+
+    if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    const beepCount = 5;
+    const repeatCount = 3;
+    const beepDuration = 0.15;
+    const gapDuration = 0.10;
+    const frequency = 1000;
+
+    let time = audioContext.currentTime;
+
+    for (let r = 0; r < repeatCount; r++) {
+        for (let i = 0; i < beepCount; i++) {
+
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+
+            osc.frequency.setValueAtTime(frequency, time);
+            gain.gain.setValueAtTime(0.3, time);
+
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+
+            osc.start(time);
+            osc.stop(time + beepDuration);
+
+            time += beepDuration + gapDuration;
+        }
+
+        time += 0.25;
+    }
+}
+</script>
+
+</body>
+</html>
